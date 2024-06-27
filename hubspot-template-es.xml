@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Crm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Country="US" Name="HubSpot ES" Version="17" SupportsEmojis="true" ListPageSize="0">
+  <Number Prefix="AsIs" MaxLength="[MaxLength]" />
+  <Connection MaxConcurrentRequests="2" />
+  <Parameters>
+    <Parameter Name="HubSpotDomain" Type="String" Parent="General Configuration" Editor="String" Title="Dominio:" Validation="" Default="app.hubspot.com" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="LookupOrder" Type="List" Parent="General Configuration" Editor="String" Title="Orden de búsqueda de contactos:" Validation="" Default="Contacts/Companies" ListValues="Contacts/Companies,Companies/Contacts" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="ClientId" Type="String" Parent="General Configuration" Editor="String" Title="ID del cliente:" Validation="" Default="" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="ClientSecret" Type="String" Parent="General Configuration" Editor="String" Title="Secreto del cliente:" Validation="" Default="" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="RefreshToken" Type="OAuth" Parent="General Configuration" Editor="String" Title="Token de actualización:" Validation="" Default="" ListValues="" RequestUrl="https://[HubSpotDomain]/oauth/authorize" RequestUrlParameters="response_type=code&amp;client_id=[ClientId]&amp;redirect_uri=[RedirectUri]&amp;state=[State]&amp;scope=crm.objects.contacts.read crm.objects.contacts.write crm.objects.companies.read crm.objects.owners.read timeline" ResponseScenario="OAuthGetRefreshToken" />
+    <Parameter Name="CreateContactEnabled" Type="Boolean" Parent="General Configuration" Editor="String" Title="Permitir la creación de contactos directamente en su CRM usando el cliente web de 3CX" Validation="" Default="False" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="ReportCallEnabled" Type="Boolean" Parent="" Editor="String" Title="Habilitar registro de llamadas" Validation="" Default="True" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="Subject" Type="String" Parent="ReportCallEnabled" Editor="String" Title="Asunto de la llamada:" Validation="" Default="Llamada de 3CX" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="InboundCallText" Type="String" Parent="ReportCallEnabled" Editor="String" Title="Llamada entrante contestada:" Validation="" Default="[DateTime]: Llamada entrante contestada de [Number] a [Agent] ([Duration])" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="MissedCallText" Type="String" Parent="ReportCallEnabled" Editor="String" Title="Llamada perdida:" Validation="" Default="[DateTime]: Llamada perdida de [Number] a [Agent]" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="OutboundCallText" Type="String" Parent="ReportCallEnabled" Editor="String" Title="Llamada saliente contestada:" Validation="" Default="[DateTime]: Llamada saliente contestada de [Agent] a [Number] ([Duration])" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="NotAnsweredOutboundCallText" Type="String" Parent="ReportCallEnabled" Editor="String" Title="Llamada saliente no contestada:" Validation="" Default="[DateTime]: Llamada saliente no contestada de [Agent] a [Number]" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="ReportChatEnabled" Type="Boolean" Parent="" Editor="String" Title="Habilitar registro de chat" Validation="" Default="False" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+    <Parameter Name="ChatSubject" Type="String" Parent="ReportChatEnabled" Editor="String" Title="Asunto del chat:" Validation="" Default="Sesión de chat de 3CX" ListValues="" RequestUrl="" RequestUrlParameters="" ResponseScenario="" />
+  </Parameters>
+  <Authentication Type="Scenario">
+    <Value>Auth</Value>
+  </Authentication>
+  <Scenarios>
+    <Scenario Id="Auth" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/oauth/v1/token" MessagePasses="0" Message="" RequestContentType="application/x-www-form-urlencoded" RequestEncoding="UrlEncoded" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Value Key="refresh_token" If="" SkipIf="" Passes="0" Type="String">[RefreshToken]</Value>
+          <Value Key="grant_type" If="" SkipIf="" Passes="0" Type="String">refresh_token</Value>
+          <Value Key="client_id" If="" SkipIf="" Passes="0" Type="String">[ClientId]</Value>
+          <Value Key="client_secret" If="" SkipIf="" Passes="0" Type="String">[ClientSecret]</Value>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">access_token</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="AccessToken" LookupValue="" Path="access_token"><Filter /></Variable>
+        <Variable Name="ExpiresIn" LookupValue="" Path="expires_in"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="GetPortalID" AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="OAuthGetRefreshToken" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/oauth/v1/token" MessagePasses="0" Message="" RequestContentType="application/x-www-form-urlencoded" RequestEncoding="UrlEncoded" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Value Key="code" If="" SkipIf="" Passes="0" Type="String">[code]</Value>
+          <Value Key="grant_type" If="" SkipIf="" Passes="0" Type="String">authorization_code</Value>
+          <Value Key="client_id" If="" SkipIf="" Passes="0" Type="String">[ClientId]</Value>
+          <Value Key="client_secret" If="" SkipIf="" Passes="0" Type="String">[ClientSecret]</Value>
+          <Value Key="redirect_uri" If="" SkipIf="" Passes="0" Type="String">[RedirectUri]</Value>
+          <Value Key="state" If="" SkipIf="" Passes="0" Type="String">[state]</Value>
+          <Value Key="scope" If="" SkipIf="" Passes="0" Type="String">crm.objects.contacts.read crm.objects.contacts.write crm.objects.companies.read crm.objects.owners.read timeline</Value>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">refresh_token</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="Result" LookupValue="" Path="refresh_token"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="Result" Passes="0" Value="[Result]" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="GetPortalID" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/integrations/v1/me" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json">
+        <Headers>
+          <Value Key="Authorization" If="" SkipIf="" Passes="0" Type="String">Bearer [AccessToken]</Value>
+        </Headers>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">portalId</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="PortalID" LookupValue="" Path="portalId"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="PortalID" Passes="0" Value="[PortalID]" />
+        <Output Type="HeaderName" Passes="0" Value="Authorization" />
+        <Output Type="HeaderValue" Passes="0" Value="Bearer [AccessToken]" />
+        <Output Type="BearerExpiration" Passes="0" Value="[ExpiresIn]" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="" Type="REST" EntityId="Contacts" EntityOrder="[LookupOrder]">
+      <Request SkipIf="[IIf([FoundRecordCount]&gt;0,True,False)]" Url="https://api.hubapi.com/crm/v3/objects/contacts/search" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Array Key="properties" If="" SkipIf="">
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">firstname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">lastname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">company</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">jobtitle</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">email</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">mobilephone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">fax</Value>
+          </Array>
+          <Array Key="filterGroups" If="" SkipIf="">
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">mobilephone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">fax</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+          </Array>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactID" LookupValue="" Path="results.id"><Filter /></Variable>
+        <Variable Name="FirstName" LookupValue="" Path="results.properties.firstname"><Filter /></Variable>
+        <Variable Name="LastName" LookupValue="" Path="results.properties.lastname"><Filter /></Variable>
+        <Variable Name="CompanyName" LookupValue="" Path="results.properties.company"><Filter /></Variable>
+        <Variable Name="Title" LookupValue="" Path="results.properties.jobtitle"><Filter /></Variable>
+        <Variable Name="Email" LookupValue="" Path="results.properties.email"><Filter /></Variable>
+        <Variable Name="PhoneBusiness" LookupValue="" Path="results.properties.phone"><Filter /></Variable>
+        <Variable Name="PhoneMobile" LookupValue="" Path="results.properties.mobilephone"><Filter /></Variable>
+        <Variable Name="FaxBusiness" LookupValue="" Path="results.properties.fax"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="FirstName" Passes="0" Value="[FirstName]" />
+        <Output Type="LastName" Passes="0" Value="[LastName]" />
+        <Output Type="CompanyName" Passes="0" Value="[CompanyName]" />
+        <Output Type="Title" Passes="0" Value="[Title]" />
+        <Output Type="Email" Passes="0" Value="[Email]" />
+        <Output Type="PhoneBusiness" Passes="0" Value="[PhoneBusiness]" />
+        <Output Type="PhoneMobile" Passes="0" Value="[PhoneMobile]" />
+        <Output Type="FaxBusiness" Passes="0" Value="[FaxBusiness]" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/contact/[ContactID]" />
+        <Output Type="EntityId" Passes="0" Value="[ContactID]" />
+        <Output Type="EntityType" Passes="0" Value="Contacts" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="" Type="REST" EntityId="Companies" EntityOrder="[LookupOrder]">
+      <Request SkipIf="[IIf([FoundRecordCount]&gt;0,True,False)]" Url="https://api.hubapi.com/crm/v3/objects/companies/search" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Array Key="properties" If="" SkipIf="">
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">name</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+          </Array>
+          <Array Key="filterGroups" If="" SkipIf="">
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+          </Array>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="CompanyID" LookupValue="" Path="results.id"><Filter /></Variable>
+        <Variable Name="CompanyName" LookupValue="" Path="results.properties.name"><Filter /></Variable>
+        <Variable Name="PhoneBusiness" LookupValue="" Path="results.properties.phone"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="CompanyName" Passes="0" Value="[CompanyName]" />
+        <Output Type="PhoneBusiness" Passes="0" Value="[PhoneBusiness]" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/company/[CompanyID]" />
+        <Output Type="EntityId" Passes="0" Value="[CompanyID]" />
+        <Output Type="EntityType" Passes="0" Value="Companies" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="LookupByEmail_Contacts" Type="REST" EntityId="Contacts" EntityOrder="[LookupOrder]">
+      <Request SkipIf="[IIf([FoundRecordCount]&gt;0,True,False)]" Url="https://api.hubapi.com/crm/v3/objects/contacts/search" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Array Key="properties" If="" SkipIf="">
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">firstname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">lastname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">company</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">jobtitle</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">email</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">mobilephone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">fax</Value>
+          </Array>
+          <Array Key="filterGroups" If="" SkipIf="">
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">email</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">EQ</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">[Email]</Value>
+                </Object>
+              </Array>
+            </Object>
+          </Array>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactID" LookupValue="" Path="results.id"><Filter /></Variable>
+        <Variable Name="FirstName" LookupValue="" Path="results.properties.firstname"><Filter /></Variable>
+        <Variable Name="LastName" LookupValue="" Path="results.properties.lastname"><Filter /></Variable>
+        <Variable Name="CompanyName" LookupValue="" Path="results.properties.company"><Filter /></Variable>
+        <Variable Name="Title" LookupValue="" Path="results.properties.jobtitle"><Filter /></Variable>
+        <Variable Name="Email" LookupValue="" Path="results.properties.email"><Filter /></Variable>
+        <Variable Name="PhoneBusiness" LookupValue="" Path="results.properties.phone"><Filter /></Variable>
+        <Variable Name="PhoneMobile" LookupValue="" Path="results.properties.mobilephone"><Filter /></Variable>
+        <Variable Name="FaxBusiness" LookupValue="" Path="results.properties.fax"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="FirstName" Passes="0" Value="[FirstName]" />
+        <Output Type="LastName" Passes="0" Value="[LastName]" />
+        <Output Type="CompanyName" Passes="0" Value="[CompanyName]" />
+        <Output Type="Title" Passes="0" Value="[Title]" />
+        <Output Type="Email" Passes="0" Value="[Email]" />
+        <Output Type="PhoneBusiness" Passes="0" Value="[PhoneBusiness]" />
+        <Output Type="PhoneMobile" Passes="0" Value="[PhoneMobile]" />
+        <Output Type="FaxBusiness" Passes="0" Value="[FaxBusiness]" />
+        <Output Type="EntityId" Passes="0" Value="[ContactID]" />
+        <Output Type="EntityType" Passes="0" Value="Contacts" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/contact/[ContactID]" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="SearchContacts_PhoneEmail" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/contacts/search" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Value Key="limit" If="" SkipIf="" Passes="0" Type="Integer">[MaxCount]</Value>
+          <Array Key="properties" If="" SkipIf="">
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">firstname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">lastname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">company</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">jobtitle</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">email</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">mobilephone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">fax</Value>
+          </Array>
+          <Array Key="filterGroups" If="" SkipIf="">
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">email</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[SearchText]*</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[SearchText]*</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">mobilephone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[SearchText]*</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">fax</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[SearchText]*</Value>
+                </Object>
+              </Array>
+            </Object>
+          </Array>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactID" LookupValue="" Path="results.id"><Filter /></Variable>
+        <Variable Name="FirstName" LookupValue="" Path="results.properties.firstname"><Filter /></Variable>
+        <Variable Name="LastName" LookupValue="" Path="results.properties.lastname"><Filter /></Variable>
+        <Variable Name="CompanyName" LookupValue="" Path="results.properties.company"><Filter /></Variable>
+        <Variable Name="Title" LookupValue="" Path="results.properties.jobtitle"><Filter /></Variable>
+        <Variable Name="Email" LookupValue="" Path="results.properties.email"><Filter /></Variable>
+        <Variable Name="PhoneBusiness" LookupValue="" Path="results.properties.phone"><Filter /></Variable>
+        <Variable Name="PhoneMobile" LookupValue="" Path="results.properties.mobilephone"><Filter /></Variable>
+        <Variable Name="FaxBusiness" LookupValue="" Path="results.properties.fax"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="FirstName" Passes="0" Value="[FirstName]" />
+        <Output Type="LastName" Passes="0" Value="[LastName]" />
+        <Output Type="CompanyName" Passes="0" Value="[CompanyName]" />
+        <Output Type="Title" Passes="0" Value="[Title]" />
+        <Output Type="Email" Passes="0" Value="[Email]" />
+        <Output Type="PhoneBusiness" Passes="0" Value="[PhoneBusiness]" />
+        <Output Type="PhoneMobile" Passes="0" Value="[PhoneMobile]" />
+        <Output Type="FaxBusiness" Passes="0" Value="[FaxBusiness]" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/contact/[ContactID]" />
+        <Output Type="EntityId" Passes="0" Value="[ContactID]" />
+        <Output Type="EntityType" Passes="0" Value="Contacts" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="SearchContacts_FirstLastCompanyName" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/contacts/search" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Value Key="limit" If="" SkipIf="" Passes="0" Type="Integer">[MaxCount]</Value>
+          <Array Key="properties" If="" SkipIf="">
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">firstname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">lastname</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">company</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">jobtitle</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">email</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">mobilephone</Value>
+            <Value Key="" If="" SkipIf="" Passes="0" Type="String">fax</Value>
+          </Array>
+          <Array Key="filterGroups" If="" SkipIf="">
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">firstname</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[SearchText]*</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">lastname</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[SearchText]*</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">company</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">CONTAINS_TOKEN</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">*[SearchText]*</Value>
+                </Object>
+              </Array>
+            </Object>
+          </Array>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactID" LookupValue="" Path="results.id"><Filter /></Variable>
+        <Variable Name="FirstName" LookupValue="" Path="results.properties.firstname"><Filter /></Variable>
+        <Variable Name="LastName" LookupValue="" Path="results.properties.lastname"><Filter /></Variable>
+        <Variable Name="CompanyName" LookupValue="" Path="results.properties.company"><Filter /></Variable>
+        <Variable Name="Title" LookupValue="" Path="results.properties.jobtitle"><Filter /></Variable>
+        <Variable Name="Email" LookupValue="" Path="results.properties.email"><Filter /></Variable>
+        <Variable Name="PhoneBusiness" LookupValue="" Path="results.properties.phone"><Filter /></Variable>
+        <Variable Name="PhoneMobile" LookupValue="" Path="results.properties.mobilephone"><Filter /></Variable>
+        <Variable Name="FaxBusiness" LookupValue="" Path="results.properties.fax"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="FirstName" Passes="0" Value="[FirstName]" />
+        <Output Type="LastName" Passes="0" Value="[LastName]" />
+        <Output Type="CompanyName" Passes="0" Value="[CompanyName]" />
+        <Output Type="Title" Passes="0" Value="[Title]" />
+        <Output Type="Email" Passes="0" Value="[Email]" />
+        <Output Type="PhoneBusiness" Passes="0" Value="[PhoneBusiness]" />
+        <Output Type="PhoneMobile" Passes="0" Value="[PhoneMobile]" />
+        <Output Type="FaxBusiness" Passes="0" Value="[FaxBusiness]" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/contact/[ContactID]" />
+        <Output Type="EntityId" Passes="0" Value="[ContactID]" />
+        <Output Type="EntityType" Passes="0" Value="Contacts" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="GetAllContacts" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/contacts" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactID" LookupValue="" Path="results.id"><Filter /></Variable>
+        <Variable Name="FirstName" LookupValue="" Path="results.properties.firstname"><Filter /></Variable>
+        <Variable Name="LastName" LookupValue="" Path="results.properties.lastname"><Filter /></Variable>
+        <Variable Name="CompanyName" LookupValue="" Path="results.properties.company"><Filter /></Variable>
+        <Variable Name="Title" LookupValue="" Path="results.properties.jobtitle"><Filter /></Variable>
+        <Variable Name="Email" LookupValue="" Path="results.properties.email"><Filter /></Variable>
+        <Variable Name="PhoneBusiness" LookupValue="" Path="results.properties.phone"><Filter /></Variable>
+        <Variable Name="PhoneMobile" LookupValue="" Path="results.properties.mobilephone"><Filter /></Variable>
+        <Variable Name="FaxBusiness" LookupValue="" Path="results.properties.fax"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="FirstName" Passes="0" Value="[FirstName]" />
+        <Output Type="LastName" Passes="0" Value="[LastName]" />
+        <Output Type="CompanyName" Passes="0" Value="[CompanyName]" />
+        <Output Type="Title" Passes="0" Value="[Title]" />
+        <Output Type="Email" Passes="0" Value="[Email]" />
+        <Output Type="PhoneBusiness" Passes="0" Value="[PhoneBusiness]" />
+        <Output Type="PhoneMobile" Passes="0" Value="[PhoneMobile]" />
+        <Output Type="FaxBusiness" Passes="0" Value="[FaxBusiness]" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/contact/[ContactID]" />
+        <Output Type="EntityId" Passes="0" Value="[ContactID]" />
+        <Output Type="EntityType" Passes="0" Value="Contacts" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="CreateContactRecord" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[CreateContactEnabled]!=True||[IIf([CreateOnCallDirection]==Inbound,[CallDirection]!=Inbound,False)]==True" Url="https://api.hubapi.com/crm/v3/objects/contacts" MessagePasses="0" Message="" RequestContentType="application/json" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Object Key="properties" If="" SkipIf="">
+            <Value Key="firstname" If="" SkipIf="" Passes="2" Type="String">[CreateContactFirstName]</Value>
+            <Value Key="lastname" If="" SkipIf="" Passes="2" Type="String">[CreateContactLastName]</Value>
+            <Value Key="phone" If="" SkipIf="" Passes="0" Type="String">[Number]</Value>
+          </Object>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactID" LookupValue="" Path="id"><Filter /></Variable>
+        <Variable Name="FirstName" LookupValue="" Path="properties.firstname"><Filter /></Variable>
+        <Variable Name="LastName" LookupValue="" Path="properties.lastname"><Filter /></Variable>
+        <Variable Name="PhoneBusiness" LookupValue="" Path="properties.phone"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="FirstName" Passes="0" Value="[FirstName]" />
+        <Output Type="LastName" Passes="0" Value="[LastName]" />
+        <Output Type="PhoneBusiness" Passes="0" Value="[PhoneBusiness]" />
+        <Output Type="EntityId" Passes="0" Value="[ContactID]" />
+        <Output Type="EntityType" Passes="0" Value="Contacts" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/contact/[ContactID]" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="CreateContactRecordFromClient" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[CreateContactEnabled]!=True" Url="https://api.hubapi.com/crm/v3/objects/contacts" MessagePasses="0" Message="" RequestContentType="application/json" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Object Key="properties" If="" SkipIf="">
+            <Value Key="firstname" If="" SkipIf="" Passes="0" Type="String">[FirstName]</Value>
+            <Value Key="lastname" If="" SkipIf="" Passes="0" Type="String">[LastName]</Value>
+            <Value Key="email" If="[Email]!=&quot;&quot;" SkipIf="" Passes="0" Type="String">[Email]</Value>
+            <Value Key="mobilephone" If="[Number]!=&quot;&quot;" SkipIf="" Passes="0" Type="String">[Number]</Value>
+            <Value Key="company" If="[Company]!=&quot;&quot;" SkipIf="" Passes="0" Type="String">[Company]</Value>
+          </Object>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactID" LookupValue="" Path="id"><Filter /></Variable>
+      </Variables>
+      <Outputs AllowEmpty="false">
+        <Output Type="FirstName" Passes="0" Value="[FirstName]" />
+        <Output Type="LastName" Passes="0" Value="[LastName]" />
+        <Output Type="CompanyName" Passes="0" Value="[Company]" />
+        <Output Type="Email" Passes="0" Value="[Email]" />
+        <Output Type="PhoneMobile" Passes="0" Value="[Number]" />
+        <Output Type="EntityId" Passes="0" Value="[ContactID]" />
+        <Output Type="EntityType" Passes="0" Value="Contacts" />
+        <Output Type="ContactUrl" Passes="0" Value="https://[HubSpotDomain]/contacts/[PortalID]/contact/[ContactID]" />
+      </Outputs>
+    </Scenario>
+    <Scenario Id="ReportCall" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[ReportCallEnabled]!=True||[EntityId]==&quot;&quot;" Url="https://api.hubapi.com/crm/v3/owners?email=[AgentEmail]" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="OwnerId" LookupValue="" Path="results.id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="CreateCallActivity" AllowEmpty="true" />
+    </Scenario>
+    <Scenario Id="CreateCallActivity" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[ReportCallEnabled]!=True||[EntityId]==&quot;&quot;" Url="https://api.hubapi.com/crm/v3/objects/calls" MessagePasses="0" Message="" RequestContentType="application/json" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Object Key="properties" If="" SkipIf="">
+            <Value Key="hs_timestamp" If="" SkipIf="" Passes="0" Type="String">[[CallStartTimeUTC].ToString("yyyy-MM-ddTHH:mm:ss.fffZ")]</Value>
+            <Value Key="hubspot_owner_id" If="[OwnerId]!=&quot;&quot;" SkipIf="" Passes="0" Type="String">[OwnerId]</Value>
+            <Value Key="hs_call_callee_object_id" If="" SkipIf="" Passes="0" Type="String">[EntityId]</Value>
+            <Value Key="hs_call_callee_object_type" If="[EntityType]==Contacts" SkipIf="" Passes="0" Type="String">CONTACT</Value>
+            <Value Key="hs_call_callee_object_type" If="[EntityType]==Companies" SkipIf="" Passes="0" Type="String">COMPANY</Value>
+            <Value Key="hs_call_direction" If="[CallType]==Inbound||[CallType]==Missed" SkipIf="" Passes="0" Type="String">INBOUND</Value>
+            <Value Key="hs_call_direction" If="[CallType]==Outbound||[CallType]==Notanswered" SkipIf="" Passes="0" Type="String">OUTBOUND</Value>
+            <Value Key="hs_call_title" If="" SkipIf="" Passes="2" Type="String">[Subject]</Value>
+            <Value Key="hs_call_body" If="[CallType]==Inbound" SkipIf="" Passes="2" Type="String">[Subject] - [InboundCallText]</Value>
+            <Value Key="hs_call_body" If="[CallType]==Missed" SkipIf="" Passes="2" Type="String">[Subject] - [MissedCallText]</Value>
+            <Value Key="hs_call_body" If="[CallType]==Outbound" SkipIf="" Passes="2" Type="String">[Subject] - [OutboundCallText]</Value>
+            <Value Key="hs_call_body" If="[CallType]==Notanswered" SkipIf="" Passes="2" Type="String">[Subject] - [NotAnsweredOutboundCallText]</Value>
+            <Value Key="hs_call_disposition" If="[CallType]==Inbound||[CallType]==Outbound" SkipIf="" Passes="0" Type="String">f240bbac-87c9-4f6e-bf70-924b57d47db7</Value>
+            <Value Key="hs_call_disposition" If="[CallType]==Missed||[CallType]==Notanswered" SkipIf="" Passes="0" Type="String">73a0d17f-1163-4015-bdd5-ec830791da20</Value>
+            <Value Key="hs_call_duration" If="[CallType]==Inbound||[CallType]==Outbound" SkipIf="" Passes="0" Type="String">[[[DurationTimespan].get_TotalMilliseconds()].ToString("F0")]</Value>
+            <Value Key="hs_call_duration" If="[CallType]==Missed||[CallType]==Notanswered" SkipIf="" Passes="0" Type="String">0</Value>
+            <Value Key="hs_call_to_number" If="[CallType]==Inbound||[CallType]==Missed" SkipIf="" Passes="0" Type="String">[Agent]</Value>
+            <Value Key="hs_call_to_number" If="[CallType]==Outbound||[CallType]==Notanswered" SkipIf="" Passes="0" Type="String">[Number]</Value>
+            <Value Key="hs_call_from_number" If="[CallType]==Inbound||[CallType]==Missed" SkipIf="" Passes="0" Type="String">[Number]</Value>
+            <Value Key="hs_call_from_number" If="[CallType]==Outbound||[CallType]==Notanswered" SkipIf="" Passes="0" Type="String">[Agent]</Value>
+            <Value Key="hs_call_status" If="" SkipIf="" Passes="0" Type="String">COMPLETED</Value>
+          </Object>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="CallID" LookupValue="" Path="id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="CreateCallActivityAssociation" AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="CreateCallActivityAssociation" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[ReportCallEnabled]!=True||[EntityId]==&quot;&quot;" Url="https://api.hubapi.com/crm/v3/objects/calls/[CallID]/associations/[IIf([EntityType]==Contacts,&quot;contact&quot;,&quot;company&quot;)]/[EntityId]/[IIf([EntityType]==Contacts,&quot;194&quot;,&quot;182&quot;)]" MessagePasses="0" Message="{}" RequestContentType="application/json" RequestEncoding="Json" RequestType="Put" ResponseType="Json" />
+      <Variables />
+      <Outputs AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="ReportChat" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[ReportChatEnabled]!=True||[EntityId]==&quot;&quot;" Url="https://api.hubapi.com/crm/v3/owners?email=[AgentEmail]" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="OwnerId" LookupValue="" Path="results.id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="CreateChatActivity" AllowEmpty="true" />
+    </Scenario>
+    <Scenario Id="CreateChatActivity" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[ReportChatEnabled]!=True||[EntityId]==&quot;&quot;" Url="https://api.hubapi.com/crm/v3/objects/meetings" MessagePasses="0" Message="" RequestContentType="application/json" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Object Key="properties" If="" SkipIf="">
+            <Value Key="hs_timestamp" If="" SkipIf="" Passes="0" Type="String">[[ChatStartTimeUTC].ToString("yyyy-MM-ddTHH:mm:ss.fffZ")]</Value>
+            <Value Key="hubspot_owner_id" If="[OwnerId]!=&quot;&quot;" SkipIf="" Passes="0" Type="String">[OwnerId]</Value>
+            <Value Key="hs_meeting_start_time" If="" SkipIf="" Passes="0" Type="String">[[ChatStartTimeUTC].ToString("yyyy-MM-ddTHH:mm:ss.fffZ")]</Value>
+            <Value Key="hs_meeting_end_time" If="" SkipIf="" Passes="0" Type="String">[[ChatEndTimeUTC].ToString("yyyy-MM-ddTHH:mm:ss.fffZ")]</Value>
+            <Value Key="hs_meeting_title" If="" SkipIf="" Passes="2" Type="String">[[ChatSubject]]</Value>
+            <Value Key="hs_meeting_body" If="" SkipIf="" Passes="0" Type="String">[[ChatMessages].Replace("
+","&lt;br/&gt;").Replace("\","")]</Value>
+            <Value Key="hs_meeting_outcome" If="" SkipIf="" Passes="0" Type="String">COMPLETED</Value>
+          </Object>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="MeetingID" LookupValue="" Path="id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="CreateChatActivityAssociation" AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="CreateChatActivityAssociation" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="[ReportChatEnabled]!=True||[EntityId]==&quot;&quot;" Url="https://api.hubapi.com/crm/v3/objects/meetings/[MeetingID]/associations/[IIf([EntityType]==Contacts,&quot;contact&quot;,&quot;company&quot;)]/[EntityId]/[IIf([EntityType]==Contacts,&quot;200&quot;,&quot;188&quot;)]" MessagePasses="0" Message="{}" RequestContentType="application/json" RequestEncoding="Json" RequestType="Put" ResponseType="Json" />
+      <Variables />
+      <Outputs AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_Contacts_LookupNumber" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/contacts/search" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Array Key="filterGroups" If="" SkipIf="">
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">EQ</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">mobilephone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">EQ</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">fax</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">EQ</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+          </Array>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactId" LookupValue="" Path="results.id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="LookupFromCFD_GetContact" AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_Contacts_LookupID" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/contacts/[EntityID]" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables />
+      <Outputs AllowEmpty="true" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_Contacts_LookupFreeQuery" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/contacts/search" MessagePasses="0" Message="[Query]" RequestContentType="application/json" RequestEncoding="Json" RequestType="Post" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="ContactId" LookupValue="" Path="results.id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="LookupFromCFD_GetContact" AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_Accounts_LookupNumber" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/companies/search" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="Json" RequestType="Post" ResponseType="Json">
+        <PostValues Key="" If="" SkipIf="">
+          <Array Key="filterGroups" If="" SkipIf="">
+            <Object Key="" If="" SkipIf="">
+              <Array Key="filters" If="" SkipIf="">
+                <Object Key="" If="" SkipIf="">
+                  <Value Key="propertyName" If="" SkipIf="" Passes="0" Type="String">phone</Value>
+                  <Value Key="operator" If="" SkipIf="" Passes="0" Type="String">EQ</Value>
+                  <Value Key="value" If="" SkipIf="" Passes="0" Type="String">[Number]</Value>
+                </Object>
+              </Array>
+            </Object>
+          </Array>
+        </PostValues>
+      </Request>
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="CompanyId" LookupValue="" Path="results.id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="LookupFromCFD_GetCompany" AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_Accounts_LookupID" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/companies/[EntityID]" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables />
+      <Outputs AllowEmpty="true" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_Accounts_LookupFreeQuery" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/companies/search" MessagePasses="0" Message="[Query]" RequestContentType="application/json" RequestEncoding="Json" RequestType="Post" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">results.id</Rule>
+      </Rules>
+      <Variables>
+        <Variable Name="CompanyId" LookupValue="" Path="results.id"><Filter /></Variable>
+      </Variables>
+      <Outputs Next="LookupFromCFD_GetCompany" AllowEmpty="false" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_GetContact" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/contacts/[ContactId]" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables />
+      <Outputs AllowEmpty="true" />
+    </Scenario>
+    <Scenario Id="LookupFromCFD_GetCompany" Type="REST" EntityId="" EntityOrder="">
+      <Request SkipIf="" Url="https://api.hubapi.com/crm/v3/objects/companies/[CompanyId]" MessagePasses="0" Message="" RequestContentType="" RequestEncoding="UrlEncoded" RequestType="Get" ResponseType="Json" />
+      <Rules>
+        <Rule Type="Any" Ethalon="">id</Rule>
+      </Rules>
+      <Variables />
+      <Outputs AllowEmpty="true" />
+    </Scenario>
+  </Scenarios>
+</Crm>
